@@ -1,19 +1,27 @@
 name: Build Wii U Plugin
-on: [push]
+on:
+  push:
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Build .wps plugin
         run: |
           cat << 'EOF' > Dockerfile
           FROM ghcr.io/wiiu-env/devkitppc:latest
-          COPY --from=ghcr.io/wiiu-env/wiiupluginsystem:latest /artifacts /opt/devkitpro
+          COPY --from=ghcr.io/wiiu-env/wiiupluginsystem:latest /artifacts $DEVKITPRO
+          COPY --from=ghcr.io/wiiu-env/wums:latest /artifacts $DEVKITPRO
+          COPY --from=ghcr.io/wiiu-env/libnotifications:latest /artifacts $DEVKITPRO
+          COPY --from=ghcr.io/wiiu-env/libmappedmemory:latest /artifacts $DEVKITPRO
           WORKDIR /project
           EOF
           docker build -t wiiu-builder .
           docker run --rm -v "${{ github.workspace }}:/project" wiiu-builder make
+
       - uses: actions/upload-artifact@v4
         with:
           name: gamepad_mic_stream
